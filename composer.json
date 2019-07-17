@@ -1,0 +1,15 @@
+{
+  "name": "comptoirdesappli/amapress-installer",
+  "description": "Installateur du plugin Amapress",
+  "minimum-stability": "dev",
+  "license": "GPLv2",
+  "authors": [
+    {
+      "name": "ShareVB",
+      "email": "sharevb@gmail.com"
+    }
+  ],
+  "require": {
+    "afragen/wp-dependency-installer": "1.4.12"
+  }
+}

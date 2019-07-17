@@ -1,0 +1,76 @@
+[
+  {
+    "name": "GitHub Updater",
+    "host": "github",
+    "slug": "github-updater/github-updater.php",
+    "uri": "afragen/github-updater",
+    "branch": "master",
+    "optional": false,
+    "token": null
+  },
+  {
+    "name": "Amapress",
+    "host": "github",
+    "slug": "amapress/amapress.php",
+    "uri": "comptoirdesappli/amapress",
+    "branch": "master",
+    "optional": false,
+    "token": null
+  },
+  {
+    "name": "BackUpWordPress",
+    "host": "wordpress",
+    "slug": "backupwordpress/backupwordpress",
+    "uri": "https://wordpress.org/plugins/backupwordpress/",
+    "optional": false
+  },
+  {
+    "name": "Google Sitemap Generator",
+    "host": "wordpress",
+    "slug": "google-sitemap-generator/google-sitemap-generator.php",
+    "uri": "https://wordpress.org/plugins/google-sitemap-generator/",
+    "optional": false
+  },
+  {
+    "name": "Unconfirmed",
+    "host": "wordpress",
+    "slug": "unconfirmed/unconfirmed.php",
+    "uri": "https://wordpress.org/plugins/unconfirmed/",
+    "optional": false
+  },
+  {
+    "name": "User Switching",
+    "host": "wordpress",
+    "slug": "user-switching/user-switching.php",
+    "uri": "https://wordpress.org/plugins/user-switching/",
+    "optional": false
+  },
+  {
+    "name": "Re Welcome",
+    "host": "wordpress",
+    "slug": "re-welcome/re-welcome.php",
+    "uri": "https://wordpress.org/plugins/re-welcome/",
+    "optional": false
+  },
+  {
+    "name": "GDPR Cookie Consent Banner",
+    "host": "wordpress",
+    "slug": "uk-cookie-consent/uk-cookie-consent.php",
+    "uri": "https://wordpress.org/plugins/uk-cookie-consent/",
+    "optional": false
+  },
+  {
+    "name": "Really Simple SSL",
+    "host": "wordpress",
+    "slug": "really-simple-ssl/really-simple-ssl.php",
+    "uri": "https://wordpress.org/plugins/really-simple-ssl/",
+    "optional": false
+  },
+  {
+    "name": "WP Maintenance",
+    "host": "wordpress",
+    "slug": "wp-maintenance/wp-maintenance.php",
+    "uri": "https://wordpress.org/plugins/wp-maintenance/",
+    "optional": false
+  }
+]
