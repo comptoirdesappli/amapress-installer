@@ -18,10 +18,10 @@
     "token": null
   },
   {
-    "name": "BackUpWordPress",
+    "name": "UpdraftPlus WordPress Backup",
     "host": "wordpress",
-    "slug": "backupwordpress/backupwordpress",
-    "uri": "https://wordpress.org/plugins/backupwordpress/",
+    "slug": "updraftplus/updraftplus.php",
+    "uri": "https://wordpress.org/plugins/updraftplus/",
     "optional": false
   },
   {
@@ -43,13 +43,6 @@
     "host": "wordpress",
     "slug": "user-switching/user-switching.php",
     "uri": "https://wordpress.org/plugins/user-switching/",
-    "optional": false
-  },
-  {
-    "name": "Re Welcome",
-    "host": "wordpress",
-    "slug": "re-welcome/re-welcome.php",
-    "uri": "https://wordpress.org/plugins/re-welcome/",
     "optional": false
   },
   {
