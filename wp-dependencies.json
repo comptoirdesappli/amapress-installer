@@ -25,20 +25,6 @@
     "optional": false
   },
   {
-    "name": "Google Sitemap Generator",
-    "host": "wordpress",
-    "slug": "google-sitemap-generator/google-sitemap-generator.php",
-    "uri": "https://wordpress.org/plugins/google-sitemap-generator/",
-    "optional": false
-  },
-  {
-    "name": "Unconfirmed",
-    "host": "wordpress",
-    "slug": "unconfirmed/unconfirmed.php",
-    "uri": "https://wordpress.org/plugins/unconfirmed/",
-    "optional": false
-  },
-  {
     "name": "User Switching",
     "host": "wordpress",
     "slug": "user-switching/user-switching.php",
