@@ -3,11 +3,11 @@
  * Plugin Name: Installateur du plugin Amapress
  * Plugin URI: https://github.com/comptoirdesappli/amapress-installer
  * Description: Installateur du plugin Amapress
- * Version: 1.1
- * Author: ShareVB
+ * Version: 1.2
+ * Author: Comptoir des Applis
  * Author URI: http://amapress.fr/
  * License: License: GPLv2 or later
- * Requires WP: 4.4
+ * Requires WP: 5.1
  * Requires PHP: 5.6
  * GitHub Plugin URI: comptoirdesappli/amapress-installer
  */
