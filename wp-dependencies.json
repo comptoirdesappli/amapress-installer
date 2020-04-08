@@ -53,13 +53,6 @@
     "optional": false
   },
   {
-    "name": "Really Simple SSL",
-    "host": "wordpress",
-    "slug": "really-simple-ssl/really-simple-ssl.php",
-    "uri": "https://wordpress.org/plugins/really-simple-ssl/",
-    "optional": false
-  },
-  {
     "name": "WP Maintenance",
     "host": "wordpress",
     "slug": "wp-maintenance/wp-maintenance.php",
