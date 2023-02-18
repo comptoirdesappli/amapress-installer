@@ -3,7 +3,7 @@
  * Plugin Name: Installateur du plugin Amapress
  * Plugin URI: https://github.com/comptoirdesappli/amapress-installer
  * Description: Installateur du plugin Amapress
- * Version: 1.4
+ * Version: 1.5
  * Author: Comptoir des Applis
  * Author URI: http://amapress.fr/
  * License: License: GPLv2 or later

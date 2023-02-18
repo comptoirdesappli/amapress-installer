@@ -96,8 +96,22 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 			add_action( 'wp_ajax_dependency_installer', [ $this, 'ajax_router' ] );
 			add_filter( 'http_request_args', [ $this, 'add_basic_auth_headers' ], 15, 2 );
 
-			// Initialize Persist admin Notices Dismissal dependency.
-			add_action( 'admin_init', [ 'PAnD', 'init' ] );
+			add_filter(
+				'wp_dependency_notices',
+				function( $notices, $slug ) {
+					foreach ( array_keys( $notices ) as $key ) {
+						if ( ! is_wp_error( $notices[ $key ] ) && $notices[ $key ]['slug'] === $slug ) {
+							$notices[ $key ]['nonce'] = $this->config[ $slug ]['nonce'];
+						}
+					}
+
+					return $notices;
+				},
+				10,
+				2
+			);
+
+			new \WP_Dismiss_Notice();
 		}
 
 		/**
@@ -154,6 +168,8 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 				$dependency['source']    = $source;
 				$dependency['sources'][] = $source;
 				$slug                    = $dependency['slug'];
+				$dependency['nonce']     = \wp_create_nonce( 'wp-dependency-installer_' . $slug );
+
 				// Keep a reference of all dependent plugins.
 				if ( isset( $this->config[ $slug ] ) ) {
 					$dependency['sources'] = array_merge( $this->config[ $slug ]['sources'], $dependency['sources'] );
@@ -179,7 +195,7 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 				$uri_args      = parse_url( $uri ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
 				$port          = isset( $uri_args['port'] ) ? $uri_args['port'] : null;
 				$api           = isset( $uri_args['host'] ) ? $uri_args['host'] : null;
-				$api           = ! $port ? $api : "$api:$port";
+				$api           = ! $port ? $api : "{$api}:{$port}";
 				$scheme        = isset( $uri_args['scheme'] ) ? $uri_args['scheme'] : null;
 				$scheme        = null !== $scheme ? $scheme . '://' : 'https://';
 				$path          = isset( $uri_args['path'] ) ? $uri_args['path'] : null;
@@ -277,6 +293,11 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 					$this->modify_plugin_row( $slug );
 				}
 
+				if ( ! wp_verify_nonce( $dependency['nonce'], 'wp-dependency-installer_' . $slug ) ) {
+					return false;
+				}
+
+				// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedIf
 				if ( $this->is_active( $slug ) ) {
 					// Do nothing.
 				} elseif ( $this->is_installed( $slug ) ) {
@@ -320,7 +341,8 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 							$.post(ajaxurl, {
 								action: 'dependency_installer',
 								method: $this.attr('data-action'),
-								slug  : $this.attr('data-slug')
+								slug  : $this.attr('data-slug'),
+								nonce : $this.attr('data-nonce')
 							}, function (response) {
 								$parent.html(response);
 							});
@@ -343,13 +365,19 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 		 * AJAX router.
 		 */
 		public function ajax_router() {
-			$method    = isset( $_POST['method'] ) ? $_POST['method'] : '';
-			$slug      = isset( $_POST['slug'] ) ? $_POST['slug'] : '';
+			if ( ! isset( $_POST['nonce'], $_POST['slug'] )
+				|| ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['nonce'] ) ), 'wp-dependency-installer_' . sanitize_text_field( wp_unslash( $_POST['slug'] ) ) )
+			) {
+				return;
+			}
+			$method    = isset( $_POST['method'] ) ? sanitize_text_field( wp_unslash( $_POST['method'] ) ) : '';
+			$slug      = isset( $_POST['slug'] ) ? sanitize_text_field( wp_unslash( $_POST['slug'] ) ) : '';
 			$whitelist = [ 'install', 'activate', 'dismiss' ];
 
 			if ( in_array( $method, $whitelist, true ) ) {
 				$response = $this->$method( $slug );
-				echo $response['message'];
+				$message  = is_wp_error( $response ) ? $response->get_error_message() : $response['message'];
+				esc_html_e( $message );
 			}
 			wp_die();
 		}
@@ -419,7 +447,7 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 			$this->current_slug = $slug;
 			add_filter( 'upgrader_source_selection', [ $this, 'upgrader_source_selection' ], 10, 2 );
 
-			$skin     = new WPDI_Plugin_Installer_Skin(
+			$skin     = new WP_Dependency_Installer_Skin(
 				[
 					'type'  => 'plugin',
 					'nonce' => wp_nonce_url( $this->config[ $slug ]['download_link'] ),
@@ -444,18 +472,19 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 
 			wp_cache_flush();
 			if ( $this->is_required( $slug ) ) {
-				$this->activate( $slug );
-
-				return [
-					'status'  => 'updated',
-					'slug'    => $slug,
-					/* translators: %s: Plugin name */
-					'message' => sprintf( esc_html__( '%s has been installed and activated.' ), $this->config[ $slug ]['name'] ),
-					'source'  => $this->config[ $slug ]['source'],
-				];
+				$result = $this->activate( $slug );
+				if ( ! is_wp_error( $result ) ) {
+					return [
+						'status'  => 'updated',
+						'slug'    => $slug,
+						/* translators: %s: Plugin name */
+						'message' => sprintf( esc_html__( '%s has been installed and activated.' ), $this->config[ $slug ]['name'] ),
+						'source'  => $this->config[ $slug ]['source'],
+					];
+				}
 			}
 
-			if ( true !== $result && 'error' === $result['status'] ) {
+			if ( is_wp_error( $result ) || ( true !== $result && 'error' === $result['status'] ) ) {
 				return $result;
 			}
 
@@ -494,6 +523,10 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 		 * @return array Message.
 		 */
 		public function activate( $slug ) {
+			if ( ! current_user_can( 'activate_plugins' ) ) {
+				return new WP_Error( 'wpdi_activate_plugins', __( 'Current user cannot activate plugins.' ), $this->config[ $slug ]['name'] );
+			}
+
 			// network activate only if on network admin pages.
 			$result = is_network_admin() ? activate_plugin( $slug, null, true ) : activate_plugin( $slug );
 
@@ -506,6 +539,7 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 
 			return [
 				'status'  => 'updated',
+				'slug'    => $slug,
 				/* translators: %s: Plugin name */
 				'message' => sprintf( esc_html__( '%s has been activated.' ), $this->config[ $slug ]['name'] ),
 				'source'  => $this->config[ $slug ]['source'],
@@ -553,44 +587,152 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 		 */
 		public function upgrader_source_selection( $source, $remote_source ) {
 			$new_source = trailingslashit( $remote_source ) . dirname( $this->current_slug );
-			$this->move( $source, $new_source );
+			$this->move_dir( $source, $new_source, true );
 
 			return trailingslashit( $new_source );
 		}
 
 		/**
-		 * Rename or recursive file copy and delete.
+		 * Moves a directory from one location to another via the rename() PHP function.
+		 * If the renaming failed, falls back to copy_dir().
 		 *
-		 * This is more versatile than `$wp_filesystem->move()`.
-		 * It moves/renames directories as well as files.
-		 * Fix for https://github.com/afragen/github-updater/issues/826,
-		 * strange failure of `rename()`.
+		 * Assumes that WP_Filesystem() has already been called and setup.
 		 *
-		 * @param string $source      File path of source.
-		 * @param string $destination File path of destination.
+		 * @since 6.2.0
 		 *
-		 * @return bool|void
+		 * @global WP_Filesystem_Base $wp_filesystem WordPress filesystem subclass.
+		 *
+		 * @param string $from      Source directory.
+		 * @param string $to        Destination directory.
+		 * @param bool   $overwrite Overwrite destination.
+		 *                          Default is false.
+		 * @return bool|WP_Error True on success, False or WP_Error on failure.
 		 */
-		private function move( $source, $destination ) {
-			if ( @rename( $source, $destination ) ) {
-				return true;
+		private function move_dir( $from, $to, $overwrite = false ) {
+			global $wp_filesystem;
+
+			if ( trailingslashit( strtolower( $from ) ) === trailingslashit( strtolower( $to ) ) ) {
+				return new \WP_Error( 'source_destination_same_move_dir', __( 'The source and destination are the same.' ) );
 			}
-			$dir = opendir( $source );
-			mkdir( $destination );
-			$source = untrailingslashit( $source );
-			// phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
-			while ( false !== ( $file = readdir( $dir ) ) ) {
-				if ( ( '.' !== $file ) && ( '..' !== $file ) && "$source/$file" !== $destination ) {
-					if ( is_dir( "$source/$file" ) ) {
-						$this->move( "$source/$file", "$destination/$file" );
-					} else {
-						copy( "$source/$file", "$destination/$file" );
-						unlink( "$source/$file" );
-					}
+
+			if ( $wp_filesystem->exists( $to ) ) {
+				if ( ! $overwrite ) {
+					return new \WP_Error( 'destination_already_exists_move_dir', __( 'The destination folder already exists.' ), $to );
+				} elseif ( ! $wp_filesystem->delete( $to, true ) ) {
+					// Can't overwrite if the destination couldn't be deleted.
+					return new \WP_Error( 'destination_not_deleted_move_dir', __( 'The destination directory already exists and could not be removed.' ) );
 				}
 			}
-			@rmdir( $source );
-			closedir( $dir );
+
+			$result = false;
+
+			if ( 'direct' === $wp_filesystem->method ) {
+				if ( $wp_filesystem->delete( $to, true ) ) {
+					$result = @rename( $from, $to );
+				}
+			} else {
+				// Non-direct filesystems use some version of rename without a fallback.
+				$result = $wp_filesystem->move( $from, $to, $overwrite );
+			}
+
+			if ( $result ) {
+				/*
+				 * When using an environment with shared folders,
+				 * there is a delay in updating the filesystem's cache.
+				 *
+				 * This is a known issue in environments with a VirtualBox provider.
+				 *
+				 * A 200ms delay gives time for the filesystem to update its cache,
+				 * prevents "Operation not permitted", and "No such file or directory" warnings.
+				 *
+				 * This delay is used in other projects, including Composer.
+				 * @link https://github.com/composer/composer/blob/main/src/Composer/Util/Platform.php#L228-L233
+				 */
+				usleep( 200000 );
+				$this->wp_opcache_invalidate_directory( $to );
+			}
+
+			if ( ! $result ) {
+				if ( ! $wp_filesystem->is_dir( $to ) ) {
+					if ( ! $wp_filesystem->mkdir( $to, FS_CHMOD_DIR ) ) {
+						return new \WP_Error( 'mkdir_failed_move_dir', __( 'Could not create directory.' ), $to );
+					}
+				}
+
+				$result = copy_dir( $from, $to, [ basename( $to ) ] );
+
+				// Clear the source directory.
+				if ( ! is_wp_error( $result ) ) {
+					$wp_filesystem->delete( $from, true );
+				}
+			}
+
+			return $result;
+		}
+
+
+		/**
+		 * Attempts to clear the opcode cache for a directory of files.
+		 *
+		 * @since 6.2.0
+		 *
+		 * @see wp_opcache_invalidate()
+		 * @link https://www.php.net/manual/en/function.opcache-invalidate.php
+		 * @global WP_Filesystem_Base $wp_filesystem WordPress filesystem subclass.
+		 *
+		 * @param string $dir The path to the directory for which the opcode cache is to be cleared.
+		 */
+		private function wp_opcache_invalidate_directory( $dir ) {
+			global $wp_filesystem;
+
+			if ( ! is_string( $dir ) || '' === trim( $dir ) ) {
+				if ( WP_DEBUG ) {
+					$error_message = sprintf(
+						/* translators: %s: The function name. */
+						__( '%s expects a non-empty string.' ),
+						'<code>wp_opcache_invalidate_directory()</code>'
+					);
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+					trigger_error( $error_message );
+				}
+				return;
+			}
+
+			$dirlist = $wp_filesystem->dirlist( $dir, false, true );
+
+			if ( empty( $dirlist ) ) {
+				return;
+			}
+
+			/*
+			 * Recursively invalidate opcache of files in a directory.
+			 *
+			 * WP_Filesystem_*::dirlist() returns an array of file and directory information.
+			 *
+			 * This does not include a path to the file or directory.
+			 * To invalidate files within sub-directories, recursion is needed
+			 * to prepend an absolute path containing the sub-directory's name.
+			 *
+			 * @param array  $dirlist Array of file/directory information from WP_Filesystem_Base::dirlist(),
+			 *                        with sub-directories represented as nested arrays.
+			 * @param string $path    Absolute path to the directory.
+			 */
+			$invalidate_directory = function( $dirlist, $path ) use ( &$invalidate_directory ) {
+				$path = trailingslashit( $path );
+
+				foreach ( $dirlist as $name => $details ) {
+					if ( 'f' === $details['type'] ) {
+						wp_opcache_invalidate( $path . $name, true );
+						continue;
+					}
+
+					if ( is_array( $details['files'] ) && ! empty( $details['files'] ) ) {
+						$invalidate_directory( $details['files'], $path . $name );
+					}
+				}
+			};
+
+			$invalidate_directory( $dirlist, $dir );
 		}
 
 		/**
@@ -617,9 +759,10 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 
 				if ( isset( $notice['action'] ) ) {
 					$action = sprintf(
-						' <a href="javascript:;" class="wpdi-button" data-action="%1$s" data-slug="%2$s">%3$s Now &raquo;</a> ',
+						' <a href="javascript:;" class="wpdi-button" data-action="%1$s" data-slug="%2$s" data-nonce="%3$s">%4$s Now &raquo;</a> ',
 						esc_attr( $notice['action'] ),
 						esc_attr( $notice['slug'] ),
+						esc_attr( $notice['nonce'] ),
 						esc_html( ucfirst( $notice['action'] ) )
 					);
 				}
@@ -637,8 +780,17 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 					$dependency  = dirname( $notice['slug'] );
 					$dismissible = empty( $timeout ) ? '' : sprintf( 'dependency-installer-%1$s-%2$s', esc_attr( $dependency ), esc_attr( $timeout ) );
 				}
-				if ( class_exists( '\PAnD' ) && \PAnD::is_admin_notice_active( $dismissible ) ) {
-					printf( '<div class="%1$s" data-dismissible="%2$s"><p><strong>[%3$s]</strong> %4$s%5$s</p></div>', $class, $dismissible, $label, $message, $action );
+				if ( \WP_Dismiss_Notice::is_admin_notice_active( $dismissible ) ) {
+					printf(
+						'<div class="%1$s" data-dismissible="%2$s"><p><strong>[%3$s]</strong> %4$s%5$s</p></div>',
+						esc_attr( $class ),
+						esc_attr( $dismissible ),
+						esc_html( $label ),
+						esc_html( $message ),
+						// $action is escaped above.
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						$action
+					);
 				}
 			}
 		}
@@ -712,10 +864,10 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 			 * @param bool $display show plugin row meta.
 			 */
 			if ( apply_filters( 'wp_dependency_required_row_meta', true ) ) {
-				print 'jQuery("tr[data-plugin=\'' . $plugin_file . '\'] .plugin-version-author-uri").append("<br><br><strong>' . esc_html__( 'Required by:' ) . '</strong> ' . $this->get_dependency_sources( $plugin_file ) . '");';
+				print 'jQuery("tr[data-plugin=\'' . esc_attr( $plugin_file ) . '\'] .plugin-version-author-uri").append("<br><br><strong>' . esc_html__( 'Required by:' ) . '</strong> ' . esc_html( $this->get_dependency_sources( $plugin_file ) ) . '");';
 			}
-			print 'jQuery(".inactive[data-plugin=\'' . $plugin_file . '\']").attr("class", "active");';
-			print 'jQuery(".active[data-plugin=\'' . $plugin_file . '\'] .check-column input").remove();';
+			print 'jQuery(".inactive[data-plugin=\'' . esc_attr( $plugin_file ) . '\']").attr("class", "active");';
+			print 'jQuery(".active[data-plugin=\'' . esc_attr( $plugin_file ) . '\'] .check-column input").remove();';
 			print '</script>';
 		}
 
@@ -817,25 +969,6 @@ if ( ! class_exists( 'WP_Dependency_Installer' ) ) {
 			remove_filter( 'http_request_args', [ $this, 'add_basic_auth_headers' ] );
 
 			return $args;
-		}
-	}
-
-	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-
-	/**
-	 * Class WPDI_Plugin_Installer_Skin
-	 */
-	class WPDI_Plugin_Installer_Skin extends Plugin_Installer_Skin {
-		public function header() {
-		}
-
-		public function footer() {
-		}
-
-		public function error( $errors ) {
-		}
-
-		public function feedback( $string, ...$args ) {
 		}
 	}
 }

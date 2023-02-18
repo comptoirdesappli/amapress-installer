@@ -6,24 +6,25 @@
         "source": {
             "type": "git",
             "url": "https://github.com/afragen/wp-dependency-installer.git",
-            "reference": "70c6131c9a7a475d42de370b12fbe1d5c8bb5aba"
+            "reference": "da85ae335c8342878d83b5ed7fe56b58609db4e1"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/afragen/wp-dependency-installer/zipball/70c6131c9a7a475d42de370b12fbe1d5c8bb5aba",
-            "reference": "70c6131c9a7a475d42de370b12fbe1d5c8bb5aba",
+            "url": "https://api.github.com/repos/afragen/wp-dependency-installer/zipball/da85ae335c8342878d83b5ed7fe56b58609db4e1",
+            "reference": "da85ae335c8342878d83b5ed7fe56b58609db4e1",
             "shasum": ""
         },
         "require": {
-            "collizo4sky/persist-admin-notices-dismissal": "^1",
+            "afragen/wp-dismiss-notice": "*",
             "php": ">=5.6"
         },
-        "time": "2020-02-28T17:28:54+00:00",
+        "time": "2023-02-06T04:22:45+00:00",
         "type": "library",
         "installation-source": "source",
         "autoload": {
             "classmap": [
-                "wp-dependency-installer.php"
+                "wp-dependency-installer.php",
+                "wp-dependency-installer-skin.php"
             ]
         },
         "notification-url": "https://packagist.org/downloads/",
@@ -48,7 +49,53 @@
                 "role": "Developer"
             }
         ],
-        "description": "Library that helps WordPress plugin dependency management."
+        "description": "Library that helps WordPress plugin dependency management.",
+        "funding": [
+            {
+                "url": "https://github.com/afragen",
+                "type": "github"
+            }
+        ]
+    },
+    {
+        "name": "afragen/wp-dismiss-notice",
+        "version": "0.3.0",
+        "version_normalized": "0.3.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/afragen/wp-dismiss-notice.git",
+            "reference": "8b690bc045620811d3c0724c2a2746cf1baab809"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/afragen/wp-dismiss-notice/zipball/8b690bc045620811d3c0724c2a2746cf1baab809",
+            "reference": "8b690bc045620811d3c0724c2a2746cf1baab809",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.6"
+        },
+        "time": "2023-01-02T19:27:07+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "classmap": [
+                "wp-dismiss-notice.php"
+            ]
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Andy Fragen",
+                "email": "andy@thefragens.com",
+                "homepage": "https://thefragens.com",
+                "role": "Developer"
+            }
+        ],
+        "description": "Library for time dismissible WordPress admin notices."
     },
     {
         "name": "collizo4sky/persist-admin-notices-dismissal",
@@ -56,12 +103,12 @@
         "version_normalized": "1.4.3.0",
         "source": {
             "type": "git",
-            "url": "https://github.com/collizo4sky/persist-admin-notices-dismissal.git",
+            "url": "https://github.com/w3guy/persist-admin-notices-dismissal.git",
             "reference": "2d7d8bb3cba631ad227c92296a4b675d7cbc71d7"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/collizo4sky/persist-admin-notices-dismissal/zipball/2d7d8bb3cba631ad227c92296a4b675d7cbc71d7",
+            "url": "https://api.github.com/repos/w3guy/persist-admin-notices-dismissal/zipball/2d7d8bb3cba631ad227c92296a4b675d7cbc71d7",
             "reference": "2d7d8bb3cba631ad227c92296a4b675d7cbc71d7",
             "shasum": ""
         },

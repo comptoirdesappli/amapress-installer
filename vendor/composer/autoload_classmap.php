@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'PAnD' => $vendorDir . '/collizo4sky/persist-admin-notices-dismissal/persist-admin-notices-dismissal.php',
-    'WPDI_Plugin_Installer_Skin' => $vendorDir . '/afragen/wp-dependency-installer/wp-dependency-installer.php',
     'WP_Dependency_Installer' => $vendorDir . '/afragen/wp-dependency-installer/wp-dependency-installer.php',
+    'WP_Dependency_Installer_Skin' => $vendorDir . '/afragen/wp-dependency-installer/wp-dependency-installer-skin.php',
+    'WP_Dismiss_Notice' => $vendorDir . '/afragen/wp-dismiss-notice/wp-dismiss-notice.php',
 );
