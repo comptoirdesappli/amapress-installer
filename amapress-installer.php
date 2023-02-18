@@ -3,7 +3,7 @@
  * Plugin Name: Installateur du plugin Amapress
  * Plugin URI: https://github.com/comptoirdesappli/amapress-installer
  * Description: Installateur du plugin Amapress
- * Version: 1.5
+ * Version: 1.6
  * Author: Comptoir des Applis
  * Author URI: http://amapress.fr/
  * License: License: GPLv2 or later
@@ -13,7 +13,6 @@
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
-WP_Dependency_Installer::instance()->run( __DIR__ );
 add_filter(
 	'wp_dependency_timeout',
 	function( $timeout, $source ) {
@@ -23,3 +22,6 @@ add_filter(
 	10,
 	2
 );
+add_action( 'plugins_loaded', function() {
+	WP_Dependency_Installer::instance()->run( __DIR__ );
+});
